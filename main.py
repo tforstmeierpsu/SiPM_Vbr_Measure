@@ -15,7 +15,7 @@ from time import gmtime, strftime, localtime, sleep
 import time
 import numpy as n
 import matplotlib.pyplot as plt
-import platform, struct
+from functions import D
 
 # Functions
 # Loop function for setting voltage and gathering data
@@ -101,15 +101,6 @@ def extractVbr(test_title, avg_num):
     plt.savefig("{0}/{1}_{2}_Vbr.png".format(folder_path_text, SiPM_ID, test_title))
 
     print(f"Step {i} of {len(voltset)}")
-
-# Determine the numerical derivative of the dataset
-def D(xlist, ylist):
-    yprime = n.diff(ylist)/n.diff(xlist)
-    xprime =[]
-    for p in range(len(yprime)):
-        xtemp = (xlist[p+1]+xlist[p])/2
-        xprime = n.append(xprime,xtemp)
-    return xprime, yprime
 
 # Find associated current for plotting Vbr point on log(I) vs V plot
 def find_vbr_y_value(log_curr, volt, vbr ):
