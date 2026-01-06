@@ -1,0 +1,28 @@
+Description: This text document contains test information for TIGERISS SiPM validation.
+
+Date: 01052026_hr16min53
+
+Test apparatus details:
+     Power supply: Keysight Technologies,EDU36311A,CN63350040,K-01.08.03-01.00-01.08-02.00+
+     Multimeter: Keysight Technologies,34470A,MY54701381,A.02.14-02.40-02.14-00.49-02-01+
+
+DUT Details:
+     Board: TSM Shake 003
+     SiPM ID: 86984
+
+----------Test 1 Begin----------
+
+Test: Pre Sjake 01052025 (5 samples averaged for each datapoint):
+Vbr [V]: 52.50727982418555
+
+Set-point Array [V]:
+[ 5. 10. 15. 20. 25. 30. 35. 40. 45. 50. 55.]
+
+Voltage Array [V]:
+[5.00574103058427, 10.0041243736647, 15.006739833734272, 20.00665041640167, 25.005088263306508, 30.009120150461115, 35.00897015163452, 40.010291993610984, 45.00629184191256, 50.00665971879428, 55.00789992957682]
+
+Current Array [A]:
+[4.694157294e-10, 9.663352986e-10, 1.3662657272000001e-09, 1.5835983319999999e-09, 1.736693494e-09, 1.8495388860000003e-09, 1.8483654820000001e-09, 2.00638902e-09, 2.1580874420000004e-09, 2.2812057199999998e-09, 4.4070423179999996e-08]
+
+
+----------Test completed----------

@@ -1,0 +1,14 @@
+Description: This text document contains test information for TIGERISS SiPM validation.
+
+Date: 01052026_hr16min45
+
+Test apparatus details:
+     Power supply: Keysight Technologies,EDU36311A,CN63350040,K-01.08.03-01.00-01.08-02.00+
+     Multimeter: Keysight Technologies,34470A,MY54701381,A.02.14-02.40-02.14-00.49-02-01+
+
+DUT Details:
+     Board: TSM Shake 003
+     SiPM ID: 86984
+
+----------Test 1 Begin----------
+
