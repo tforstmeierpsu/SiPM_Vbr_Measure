@@ -12,28 +12,35 @@
 import pyvisa as visa # Python package that provides bindings to Virtual Instrument Software Architecture (VISA)
 import config
 import functions
-import numpy as n
+import os
 
 # Establish VISA  with devices
-#rm = visa.ResourceManager()
-#ps = rm.open_resource(config.ps_VISA) # Power supply
-#dmm = rm.open_resource(config.dmm_VISA) # Digital multimeter
+rm = visa.ResourceManager()
+dmm = rm.open_resource(config.dmm_VISA) # Digital multimeter
+ps = rm.open_resource(config.ps_VISA) # Power supply
 
-#functions.inst_init(ps, dmm)
-#functions.filestruct_init(ps, dmm)
+# Initialize instruments
+functions.inst_init(ps, dmm)
 
-functions.volt_set()
-print(config.data[0][1])
+# Initialize variables and filestructure
+functions.filestruct_init(ps, dmm)
 
-# General Test
+# TEST BODY
 
+# Coarse pass
+functions.volt_set(50,650,50,None)
+Vbr_coarse = functions.extractVbr('coarse',ps,dmm)
 
-#extractVbr(test_name,5)
+# Fine pass around Vbr
+functions.volt_set(50,650,50,Vbr_coarse)
+config.Vbr = functions.extractVbr('fine',ps,dmm)
+
+# Save text data and plots to folder
+functions.save_data()
 
 # Power down instrument
-#functions.inst_off(ps, dmm)
+functions.inst_off(ps, dmm)
 
-#text_file.write("----------Test completed----------\n")
-#text_file.close()
+# Trigger a beep sound
 
 exit()
