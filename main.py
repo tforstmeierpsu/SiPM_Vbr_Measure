@@ -2,6 +2,7 @@
 # a high fidelity DMM and a power supply. The primary objective of this test is to gather and I-V plot for each
 # SiPM device, controlling the bias voltage while measuring the DC output current. Test details
 # live in the same folder as this script.
+import time
 
 # Version: 2.0
 # Date: 01/04/2025
@@ -12,13 +13,12 @@
 import pyvisa as visa # Python package that provides bindings to Virtual Instrument Software Architecture (VISA)
 import config
 import functions
-import os
+# import os
 
 # Establish VISA  with devices
 rm = visa.ResourceManager()
 dmm = rm.open_resource(config.dmm_VISA) # Digital multimeter
 ps = rm.open_resource(config.ps_VISA) # Power supply
-
 # Initialize instruments
 functions.inst_init(ps, dmm)
 
@@ -28,11 +28,12 @@ functions.filestruct_init(ps, dmm)
 # TEST BODY
 
 # Coarse pass
-functions.volt_set(50,650,50,None)
-Vbr_coarse = functions.extractVbr('coarse',ps,dmm)
+#functions.volt_set(50,650,50,None)
+#Vbr_coarse = functions.extractVbr('coarse',ps,dmm)
 
 # Fine pass around Vbr
-functions.volt_set(50,650,50,Vbr_coarse)
+functions.volt_set(50,650,50,52.5)
+time.sleep(5)
 config.Vbr = functions.extractVbr('fine',ps,dmm)
 
 # Save text data and plots to folder
@@ -40,7 +41,5 @@ functions.save_data()
 
 # Power down instrument
 functions.inst_off(ps, dmm)
-
-# Trigger a beep sound
 
 exit()

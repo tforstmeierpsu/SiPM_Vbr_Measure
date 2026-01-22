@@ -42,10 +42,11 @@ def filestruct_init(ps, dmm):
         config.SiPM_ID = "86984"
         config.text_note = "None"
     else:
-        config.test_name = input("Enter test name (Pre Shake Test, Post Shake Test).")
+        #config.test_name = input("Enter test name (Pre Shake Test, Post Shake Test).")
+        config.test_name = "Pre Shake 01212026"
         config.board_ID = input("Enter the board for this SiPM (TSM Shake 003 or TSM Shake 002).")
         config.SiPM_ID = input("Enter the SiPM ID (002 TR: 87075, 002 TL: 87076, 003 BR: 87010, 003 BL: 86984).")
-        config.text_note = input("Enter any identifying notes for this test.")
+        #config.text_note = input("Enter any identifying notes for this test.")
 
     # Make board folder if it does not exist already
     config.folder_path_text = "SiPM Validation Data/{0}/{1}/{2}".format(str(config.test_name), str(config.SiPM_ID), str(config.time_stamp))
@@ -62,9 +63,9 @@ def filestruct_init(ps, dmm):
     # Populate text file with header information
     config.text_file.write("Description: This text document contains test information for TIGERISS SiPM validation.\n\n")
     config.text_file.write("Date: {0}\n\nTest apparatus details:\n".format(config.time_stamp))
-    #config.text_file.write("     Power supply: " + ps.query("*IDN?").rstrip('\n') + "+\n")
-    #config.text_file.write("     Multimeter: " + dmm.query("*IDN?").rstrip('\n') + "+\n\n")
-    config.text_file.write("DUT Details:\n     Board: {0}\n     SiPM ID: {1}\n     Limit Resistor: {2}\n     Notes: {3}\n\n".format(config.board_ID, config.SiPM_ID, config.prot_res, config.text_note))
+    config.text_file.write("     Power supply: " + ps.query("*IDN?").rstrip('\n') + "+\n")
+    config.text_file.write("     Multimeter: " + dmm.query("*IDN?").rstrip('\n') + "+\n\n")
+    config.text_file.write("DUT Details:\n     Board: {0}\n     SiPM ID: {1}\n     Limit Resistor: {2}\n\n".format(config.board_ID, config.SiPM_ID, config.prot_res))
     config.text_file.write("----------Test 1 Begin----------\n\n")
 
 def volt_set(start,stop,step,Vbr_set):
@@ -74,7 +75,7 @@ def volt_set(start,stop,step,Vbr_set):
         fine_volt = []
     else:
         print("\n\nBeginning fine pass around coarse Vbr...\n")
-        del config.data[0][1]
+        #del config.data[0][1]
         start = int((10 * Vbr_set) - 10)
         stop = int((10 * Vbr_set) + 10)
         fine_volt = n.arange(start, stop, 1, dtype=n.float64)
@@ -85,43 +86,69 @@ def extractVbr(type, ps, dmm):
     print(config.data[0][1])
     # Obtain setpoints from storage variable
     voltset = config.data[0][1]
-    avg_num = 5 if type == 'coarse' else 10
+    avg_num = 5 if type == 'coarse' else 50
 
     SCPI_word = ''
     voltage_temp = []
     current_temp = []
 
     # Create storage variables
-    currentArray = n.zeros(avg_num, dtype=n.float64)  # current array containing floats
-    voltageArray = n.zeros(avg_num, dtype=n.float64)  # voltage array containing floats
+
     voltageSDIV = currentSDIV = 0
 
     for i in range(len(voltset)):  # Outer loop walks through all voltage set points
+        print("Set point: {0}...\n".format(voltset[i]))
+        currentArray = n.zeros(avg_num, dtype=n.float64)  # current array containing floats
+        voltageArray = n.zeros(avg_num, dtype=n.float64)  # voltage array containing floats
         # Set voltage; loop for 3 channels of ps
         for j in range(1, 4):  # 1, 2, 3
             mult = (5.0 if j == 1 else 30.0) / 65.0
             write_val = mult * voltset[i]
             SCPI_word = "VOLT {0}, (@{1})".format(f"{write_val:.3f}", str(j))
+            print("Sending [{0}] to power supply... ".format(SCPI_word))
             ps.write(SCPI_word)
             ps.write("*WAI")
-            time.sleep(0.8)
+
+        #time.sleep(3)
+        temp_c_0 = 0
+        temp_c_1 = 1000
+
+        while abs(10000000000 * (temp_c_1 - temp_c_0)) > 1.5:
+            temp_c_0 = float(dmm.query("READ?"))
+            dmm.write("*WAI")
+            time.sleep(0.5)
+            temp_c_1 = float(dmm.query("READ?"))
+            dmm.write("*WAI")
+            time.sleep(0.5)
+            print("Temp current 0: {0}...".format(str(temp_c_0)))
+            print("Temp current 1: {0}...".format(str(temp_c_1)))
+            print(abs(10000000000 * (temp_c_1 - temp_c_0)) > 1.5)
 
         # Measure voltage and current
         for k in range(len(voltageArray)):
+
             SCPI_word = ps.query("MEAS:VOLT? (@1,2,3)")
-            currentArray[k] = float(dmm.query("READ?"))
+
+            while (currentArray[k]<=0 or currentArray[k]>2):
+                time.sleep(0.05)
+                currentArray[k] = float(dmm.query("READ?"))
+                dmm.write("*WAI")
+
             voltage_handle = SCPI_word.split(",")
-            voltageArray[k] = sum([float(i) for i in voltage_handle]) - currentArray[k] * float(config.prot_res)
-            time.sleep(0.02)
+            voltageArray[k] = sum([float(i) for i in voltage_handle])
+            #voltageArray[k] = sum([float(i) for i in voltage_handle]) - currentArray[k] * float(config.prot_res)
+
+            time.sleep(0.05)
+
+        print("\nVoltage Samples: {0}...Current Samples: {1}\n".format(str(voltageArray), str(currentArray)))
 
         # Populate storage arrays
         voltageSDIV = n.std(voltageArray)
         currentSDIV = n.std(currentArray)
         voltage_temp.append(float(voltageArray.mean()))
         current_temp.append(float(currentArray.mean()))
-
+        print("Average voltage: {0}...Average current: {1}\n".format(voltageArray.mean(),currentArray.mean()))
         SCPI_word = "VOLT {0}, (@{1})".format(f"{write_val:.3f}", str(j))
-
         print("Percentage complete: {0}...".format(f"{100*((i+1)/len(voltset)):.1f}"))
 
     Vbr_temp = Vbr_from_data(current_temp, voltage_temp)
@@ -139,6 +166,7 @@ def extractVbr(type, ps, dmm):
     return Vbr_temp
 
 def save_data():
+    config.text_note = input("Enter any notes for this test.\n")
     temp_numpy_array = n.array(config.data[2][1])
     valid_mask = temp_numpy_array > 0
     avg_curr_log = n.full(temp_numpy_array.shape, n.nan)
@@ -156,6 +184,7 @@ def save_data():
     config.text_file.write("Set-point Array [V]:\n{0}\n\n".format(config.data[0][1]))
     config.text_file.write("Voltage Array [V]:\n{0}\n\n".format(config.data[1][1]))
     config.text_file.write("Current Array [A]:\n{0}\n\n\n".format(config.data[2][1]))
+    config.text_file.write("Notes: {0}\n\n\n".format(config.text_note))
     config.text_file.write("----------Test completed----------\n")
     config.text_file.close()
 
