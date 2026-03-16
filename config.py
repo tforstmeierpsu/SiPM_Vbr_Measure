@@ -6,10 +6,18 @@ data = [["Setpoint"],["Measure Voltage [V]"],["Measured Current [A]"],["Log(Meas
 # VISA addresses for devices in test apparatus; change these to match those in your system
 ps_VISA = 'TCPIP0::172.29.0.41::inst0::INSTR'
 dmm_VISA = 'TCPIP0::172.29.0.36::inst0::INSTR'
-test = 0
+test_ct = 0
 
 # Refer to the board schematic for the value of the protect resistor; usually 1kOhm
 prot_res = 1000
 
 # Test information
-time_stamp = test_name = board_ID = SiPM_ID = text_note = file_name = text_file = folder_path_text = Vbr = None
+pre_post = time_stamp = test_name = board_ID = SiPM_ID = text_note = file_name = text_file = folder_path_text = Vbr = None
+
+# DUT Information
+
+
+#002 TR: 87075, 002 TL: 87076, 003 BR: 87010, 003 BL: 86984
+
+board_list = ['TSM Shake 002','TSM Shake 002','TSM Shake 003','TSM Shake 003']
+SiPM_ID_list = ['87075','87076','87010','86984']

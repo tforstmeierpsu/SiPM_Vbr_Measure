@@ -33,20 +33,23 @@ def inst_off(ps, dmm):
     dmm.write("*RST")
     dmm.close()
 
-def filestruct_init(ps, dmm):
+def filestruct_init(ps, dmm, test_type):
     # Gather date/time and open a text file
     config.time_stamp = strftime("%m%d%Y_hr%Hmin%M", localtime())
-    if config.test:
-        config.test_name = "Pre Shake Test 01072026"
-        config.board_ID = "TSM Shake 003"
-        config.SiPM_ID = "86984"
-        config.text_note = "None"
-    else:
+    if test_type == 1:
+        if config.test_name == 0:
+            config.pre_post = input("Select pre [1] or post [2] vibration test\n")
+        config.test_name = "{0} Vibration Test {1}".format(config.pre_post,str(config.time_stamp))
+        config.board_ID = config.board_ID[config.test_ct]
+        config.SiPM_ID = config.SiPM_ID[config.test_ct]
+        config.text_note = input("Enter any notes for this test\n")
+    elif test_type == 2:
         #config.test_name = input("Enter test name (Pre Shake Test, Post Shake Test).")
-        config.test_name = "Pre Shake 01212026"
-        config.board_ID = input("Enter the board for this SiPM (TSM Shake 003 or TSM Shake 002).")
-        config.SiPM_ID = input("Enter the SiPM ID (002 TR: 87075, 002 TL: 87076, 003 BR: 87010, 003 BL: 86984).")
-        #config.text_note = input("Enter any identifying notes for this test.")
+        config.test_name = input("Enter the name for this test.\n")
+        config.board_ID = input("Enter the board for this SiPM.\n")
+        config.SiPM_ID = input("Enter the SiPM ID.\n")
+        #config.SiPM_ID = input("Enter the SiPM ID (002 TR: 87075, 002 TL: 87076, 003 BR: 87010, 003 BL: 86984).")
+        config.text_note = input("Enter any identifying notes for this test.")
 
     # Make board folder if it does not exist already
     config.folder_path_text = "SiPM Validation Data/{0}/{1}/{2}".format(str(config.test_name), str(config.SiPM_ID), str(config.time_stamp))
@@ -66,7 +69,7 @@ def filestruct_init(ps, dmm):
     config.text_file.write("     Power supply: " + ps.query("*IDN?").rstrip('\n') + "+\n")
     config.text_file.write("     Multimeter: " + dmm.query("*IDN?").rstrip('\n') + "+\n\n")
     config.text_file.write("DUT Details:\n     Board: {0}\n     SiPM ID: {1}\n     Limit Resistor: {2}\n\n".format(config.board_ID, config.SiPM_ID, config.prot_res))
-    config.text_file.write("----------Test 1 Begin----------\n\n")
+    config.text_file.write("----------Test Begin----------\n\n")
 
 def volt_set(start,stop,step,Vbr_set):
     coarse_volt = n.arange(start, stop, step, dtype=n.float64)
@@ -153,7 +156,7 @@ def extractVbr(type, ps, dmm):
 
     Vbr_temp = Vbr_from_data(current_temp, voltage_temp)
 
-    if type == 'fine':
+    if type == 'save_data':
         config.data[1].append(voltage_temp)
         config.data[2].append(current_temp)
     else:
