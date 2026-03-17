@@ -19,6 +19,7 @@ import functions
 rm = visa.ResourceManager()
 dmm = rm.open_resource(config.dmm_VISA) # Digital multimeter
 ps = rm.open_resource(config.ps_VISA) # Power supply
+
 # Initialize instruments
 functions.inst_init(ps, dmm)
 
@@ -30,15 +31,24 @@ while(cont == 'Y'):
     print('This program aims to facilitate extraction of SiPM breakdown voltage.\n\n')
     test_type = input("Select test type: \n  [1] Inflexible Vibration Test Sequence\n   [2] Programmable Vibration Test Sequence\n   [3] Test apparatus validation\n")
 
-    # Initialize variables and filestructure
-
     # Switch statement
     if test_type == '1':
+        print("---> Inflexible Vibration Test Sequence Selected...\n")
+        dmm = rm.open_resource(config.dmm_VISA)  # Digital multimeter
+        ps = rm.open_resource(config.ps_VISA)  # Power supply
+
+        # Initialize filestructure
         functions.filestruct_init(ps, dmm, test_type)
+
+        # Print test fixture information
+        print("Power supply: " + ps.query("*IDN?").rstrip('\n') + "+\n")
+        print("Multimeter: " + dmm.query("*IDN?").rstrip('\n') + "+\n\n")
 
         print("The first two SiPMs are on TSM Shake 002, which is loaded in the ")
 
         functions.volt_set(50, 650, 50, None)
+
+
 
     # Coarse pass
     functions.volt_set(50,650,50,None)
