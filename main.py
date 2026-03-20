@@ -48,6 +48,35 @@ while(cont == 'Y'):
 
         functions.volt_set(50, 650, 50, None)
 
+        #First SiPM ID
+        #Instructions on wiring connection
+        #Coarse pass
+        #Fine pass
+        #Print Vbr result
+        #Pause program
+
+        # Second SiPM ID
+        # Instructions on wiring connection
+        # Coarse pass
+        # Fine pass
+        # Print Vbr result
+        # Pause program
+
+        # Third SiPM ID
+        # Instructions on wiring connection
+        # Coarse pass
+        # Fine pass
+        # Print Vbr result
+        # Pause program
+
+        # Fourth SiPM ID
+        # Instructions on wiring connection
+        # Coarse pass
+        # Fine pass
+        # Print Vbr result
+        # Pause program
+
+
 
 
     # Coarse pass
