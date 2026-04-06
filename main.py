@@ -24,16 +24,16 @@ ps = rm.open_resource(config.ps_VISA) # Power supply
 functions.inst_init(ps, dmm)
 
 # TEST BODY
-
 cont = 'Y'
 
+print('This program aims to facilitate extraction of SiPM breakdown voltage.\n\n')
+
 while(cont == 'Y'):
-    print('This program aims to facilitate extraction of SiPM breakdown voltage.\n\n')
-    test_type = input("Select test type: \n  [1] Inflexible Vibration Test Sequence\n   [2] Programmable Vibration Test Sequence\n   [3] Test apparatus validation\n")
+    test_type = input("Select test type: \n  [1] Inflexible Vibration Test Sequence\n  [2] Programmable Vibration Test Sequence\n  [3] Test apparatus validation [4] Exit program\n")
 
     # Switch statement
     if test_type == '1':
-        print("---> Inflexible Vibration Test Sequence Selected...\n")
+        print("---> [1] Inflexible Vibration Test Sequence...\n")
         dmm = rm.open_resource(config.dmm_VISA)  # Digital multimeter
         ps = rm.open_resource(config.ps_VISA)  # Power supply
 
@@ -44,54 +44,45 @@ while(cont == 'Y'):
         print("Power supply: " + ps.query("*IDN?").rstrip('\n') + "+\n")
         print("Multimeter: " + dmm.query("*IDN?").rstrip('\n') + "+\n\n")
 
-        print("The first two SiPMs are on TSM Shake 002, which is loaded in the ")
+        for s in range(1, 5):
+            if s == 1:
+                print("First SiPM ID: 87076; Location: TSM_002 pos 8 (TR)\n")
+                print("***NOTE THAT WILL HOLD CONNECTION INFORMATION (red plug vbias, etc.)***\n")
+            elif s == 2:
+                print("Second SiPM ID: 87075; Location: TSM_002 pos 12 (TL)\n")
+                print("***NOTE THAT WILL HOLD CONNECTION INFORMATION (red plug vbias, etc.)***\n")
+            elif s == 3:
+                print("Third SiPM ID: 86984; Location: TSM_003 pos 21 (??)\n")
+                print("***NOTE THAT WILL HOLD CONNECTION INFORMATION (red plug vbias, etc.)***\n")
+            elif s == 4:
+                print("Fourth SiPM ID: 87010; Location: TSM_003 pos 25 (??)\n")
+                print("***NOTE THAT WILL HOLD CONNECTION INFORMATION (red plug vbias, etc.)***\n")
 
-        functions.volt_set(50, 650, 50, None)
+            functions.filestruct_init(ps, dmm, test_type)
 
-        #First SiPM ID
-        #Instructions on wiring connection
-        #Coarse pass
-        #Fine pass
-        #Print Vbr result
-        #Pause program
+            #functions.volt_set(50, 650, 50, None)
+            #Vbr_coarse = functions.extractVbr('pre_data', ps, dmm)
 
-        # Second SiPM ID
-        # Instructions on wiring connection
-        # Coarse pass
-        # Fine pass
-        # Print Vbr result
-        # Pause program
+            Vbr_coarse = 52.5
+            functions.volt_set(50, 650, 50, Vbr_coarse)
+            config.Vbr_1 = functions.extractVbr('save_data', ps, dmm)
+            functions.save_data()
+            config.test_ct = config.test_ct + 1
 
-        # Third SiPM ID
-        # Instructions on wiring connection
-        # Coarse pass
-        # Fine pass
-        # Print Vbr result
-        # Pause program
+    if test_type == '3':
+        print("---> [3] Test apparatus validation...\n")
+        dmm = rm.open_resource(config.dmm_VISA)  # Digital multimeter
+        ps = rm.open_resource(config.ps_VISA)  # Power supply
 
-        # Fourth SiPM ID
-        # Instructions on wiring connection
-        # Coarse pass
-        # Fine pass
-        # Print Vbr result
-        # Pause program
+        # Print test fixture information
+        print("   Power supply: " + ps.query("*IDN?").rstrip('\n'))
+        print("   Multimeter: " + dmm.query("*IDN?").rstrip('\n'))
 
-
-
-
-    # Coarse pass
-    functions.volt_set(50,650,50,None)
-    Vbr_coarse = functions.extractVbr('save_data',ps,dmm)
-
-    # Fine pass around Vbr
-    functions.volt_set(50,650,50,52.5)
-    time.sleep(5)
-    config.Vbr = functions.extractVbr('fine',ps,dmm)
-
-    # Save text data and plots to folder
-    functions.save_data()
-
-
+        functions.volt_set(0, 500, 100,'Test_Fixture')
+        functions.extractVbr('pre_data',ps,dmm)
+        print("Test apparatus verification completed.\n\n")
+    if test_type == '4':
+        cont = 'N'
 
 # Power down instrument
 functions.inst_off(ps, dmm)

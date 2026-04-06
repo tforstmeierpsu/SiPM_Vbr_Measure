@@ -42,14 +42,12 @@ def filestruct_init(ps, dmm, test_type):
         config.test_name = "{0} Vibration Test {1}".format(config.pre_post,str(config.time_stamp))
         config.board_ID = config.board_ID[config.test_ct]
         config.SiPM_ID = config.SiPM_ID[config.test_ct]
-        config.text_note = input("Enter any notes for this test\n")
     elif test_type == 2:
         #config.test_name = input("Enter test name (Pre Shake Test, Post Shake Test).")
         config.test_name = input("Enter the name for this test.\n")
         config.board_ID = input("Enter the board for this SiPM.\n")
         config.SiPM_ID = input("Enter the SiPM ID.\n")
         #config.SiPM_ID = input("Enter the SiPM ID (002 TR: 87075, 002 TL: 87076, 003 BR: 87010, 003 BL: 86984).")
-        config.text_note = input("Enter any identifying notes for this test.")
 
     # Make board folder if it does not exist already
     config.folder_path_text = "SiPM Validation Data/{0}/{1}/{2}".format(str(config.test_name), str(config.SiPM_ID), str(config.time_stamp))
@@ -74,22 +72,26 @@ def filestruct_init(ps, dmm, test_type):
 def volt_set(start,stop,step,Vbr_set):
     coarse_volt = n.arange(start, stop, step, dtype=n.float64)
     if Vbr_set == None:
-        print("\n\nBeginning coarse pass...\n")
+        print("\nBeginning coarse pass with following set-points:")
+        fine_volt = []
+    elif Vbr_set == 'Test_Fixture':
+        print("\nBeginning test fixture pass with following set-points:")
         fine_volt = []
     else:
-        print("\n\nBeginning fine pass around coarse Vbr...\n")
+        print("\nBeginning fine pass around coarse Vbr with following set-points:")
         #del config.data[0][1]
         start = int((10 * Vbr_set) - 10)
         stop = int((10 * Vbr_set) + 10)
         fine_volt = n.arange(start, stop, 1, dtype=n.float64)
+
     voltset_handle = ((n.sort(n.append(coarse_volt, fine_volt))) / 10).tolist()
     config.data[0].append(voltset_handle)
 
 def extractVbr(type, ps, dmm):
-    print(config.data[0][1])
+    print("{0}\n".format(config.data[0][1]))
     # Obtain setpoints from storage variable
     voltset = config.data[0][1]
-    avg_num = 5 if type == 'coarse' else 50
+    avg_num = 5 if type == 'pre_data' else 50
 
     SCPI_word = ''
     voltage_temp = []
@@ -100,7 +102,7 @@ def extractVbr(type, ps, dmm):
     voltageSDIV = currentSDIV = 0
 
     for i in range(len(voltset)):  # Outer loop walks through all voltage set points
-        print("Set point: {0}...\n".format(voltset[i]))
+        print("Beginning set point: {0} [V]...\n".format(voltset[i]))
         currentArray = n.zeros(avg_num, dtype=n.float64)  # current array containing floats
         voltageArray = n.zeros(avg_num, dtype=n.float64)  # voltage array containing floats
         # Set voltage; loop for 3 channels of ps
@@ -108,7 +110,7 @@ def extractVbr(type, ps, dmm):
             mult = (5.0 if j == 1 else 30.0) / 65.0
             write_val = mult * voltset[i]
             SCPI_word = "VOLT {0}, (@{1})".format(f"{write_val:.3f}", str(j))
-            print("Sending [{0}] to power supply... ".format(SCPI_word))
+            print("--->INSTRUMENT CMD: [{0}] to power supply... ".format(SCPI_word))
             ps.write(SCPI_word)
             ps.write("*WAI")
 
@@ -116,16 +118,20 @@ def extractVbr(type, ps, dmm):
         temp_c_0 = 0
         temp_c_1 = 1000
 
+        equil_ct = 0
+
         while abs(10000000000 * (temp_c_1 - temp_c_0)) > 1.5:
+            equil_ct = equil_ct + 1
             temp_c_0 = float(dmm.query("READ?"))
             dmm.write("*WAI")
             time.sleep(0.5)
             temp_c_1 = float(dmm.query("READ?"))
             dmm.write("*WAI")
             time.sleep(0.5)
-            print("Temp current 0: {0}...".format(str(temp_c_0)))
-            print("Temp current 1: {0}...".format(str(temp_c_1)))
-            print(abs(10000000000 * (temp_c_1 - temp_c_0)) > 1.5)
+            print("{0} Waiting for system to stabilize...".format(equil_ct))
+            #print("Temp current 0: {0}...".format(str(temp_c_0)))
+            #print("Temp current 1: {0}...".format(str(temp_c_1)))
+            #print(abs(10000000000 * (temp_c_1 - temp_c_0)) > 1.5)
 
         # Measure voltage and current
         for k in range(len(voltageArray)):
@@ -143,22 +149,23 @@ def extractVbr(type, ps, dmm):
 
             time.sleep(0.05)
 
-        print("\nVoltage Samples: {0}...Current Samples: {1}\n".format(str(voltageArray), str(currentArray)))
+        print("\nVoltage Samples: {0}\nCurrent Samples: {1}\n".format(str(voltageArray), str(currentArray)))
 
         # Populate storage arrays
         voltageSDIV = n.std(voltageArray)
         currentSDIV = n.std(currentArray)
         voltage_temp.append(float(voltageArray.mean()))
         current_temp.append(float(currentArray.mean()))
-        print("Average voltage: {0}...Average current: {1}\n".format(voltageArray.mean(),currentArray.mean()))
+        print("Average voltage: {0}\nAverage current: {1}\n".format(voltageArray.mean(),currentArray.mean()))
         SCPI_word = "VOLT {0}, (@{1})".format(f"{write_val:.3f}", str(j))
-        print("Percentage complete: {0}...".format(f"{100*((i+1)/len(voltset)):.1f}"))
+        print("Percentage complete: {0}%...".format(f"{100*((i+1)/len(voltset)):.1f}"))
 
     Vbr_temp = Vbr_from_data(current_temp, voltage_temp)
 
     if type == 'save_data':
         config.data[1].append(voltage_temp)
         config.data[2].append(current_temp)
+
     else:
         print("Coarse Vbr: {0}".format(Vbr_temp))
 
