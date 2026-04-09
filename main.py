@@ -29,7 +29,7 @@ cont = 'Y'
 print('This program aims to facilitate extraction of SiPM breakdown voltage.\n\n')
 
 while(cont == 'Y'):
-    test_type = input("Select test type: \n  [1] Inflexible Vibration Test Sequence\n  [2] Programmable Vibration Test Sequence\n  [3] Test apparatus validation [4] Exit program\n")
+    test_type = input("Select test type: \n  [1] Inflexible Vibration Test Sequence\n  [2] Programmable Vibration Test Sequence\n  [3] Test apparatus validation\n  [4] Exit program\n")
 
     # Switch statement
     if test_type == '1':
@@ -43,6 +43,8 @@ while(cont == 'Y'):
         # Print test fixture information
         print("Power supply: " + ps.query("*IDN?").rstrip('\n') + "+\n")
         print("Multimeter: " + dmm.query("*IDN?").rstrip('\n') + "+\n\n")
+
+        config.test_ct = 0
 
         for s in range(1, 5):
             if s == 1:
@@ -58,16 +60,32 @@ while(cont == 'Y'):
                 print("Fourth SiPM ID: 87010; Location: TSM_003 pos 25 (??)\n")
                 print("***NOTE THAT WILL HOLD CONNECTION INFORMATION (red plug vbias, etc.)***\n")
 
-            functions.filestruct_init(ps, dmm, test_type)
 
-            #functions.volt_set(50, 650, 50, None)
-            #Vbr_coarse = functions.extractVbr('pre_data', ps, dmm)
+            functions.volt_set(50, 650, 50, None)
+            config.Vbr_5 = functions.extractVbr('pre_data', ps, dmm)
 
-            Vbr_coarse = 52.5
-            functions.volt_set(50, 650, 50, Vbr_coarse)
+            functions.volt_set(50, 650, 50, config.Vbr_5)
             config.Vbr_1 = functions.extractVbr('save_data', ps, dmm)
             functions.save_data()
             config.test_ct = config.test_ct + 1
+
+    if test_type == '2':
+        print("---> [2] Programmable Vibration Test Sequence...\n")
+
+        dmm = rm.open_resource(config.dmm_VISA)  # Digital multimeter
+        ps = rm.open_resource(config.ps_VISA)  # Power supply
+
+        # Initialize filestructure
+        functions.filestruct_init(ps, dmm, test_type)
+
+        # Print test fixture information
+        print("Power supply: " + ps.query("*IDN?").rstrip('\n') + "+\n")
+        print("Multimeter: " + dmm.query("*IDN?").rstrip('\n') + "+\n\n")
+
+        Vbr_coarse = 52.5
+        functions.volt_set(50, 650, 50, Vbr_coarse)
+        config.Vbr_1 = functions.extractVbr('save_data', ps, dmm)
+        functions.save_data()
 
     if test_type == '3':
         print("---> [3] Test apparatus validation...\n")
@@ -78,9 +96,10 @@ while(cont == 'Y'):
         print("   Power supply: " + ps.query("*IDN?").rstrip('\n'))
         print("   Multimeter: " + dmm.query("*IDN?").rstrip('\n'))
 
-        functions.volt_set(0, 500, 100,'Test_Fixture')
+        functions.volt_set(0, 600, 100,'Test_Fixture')
         functions.extractVbr('pre_data',ps,dmm)
         print("Test apparatus verification completed.\n\n")
+
     if test_type == '4':
         cont = 'N'
 

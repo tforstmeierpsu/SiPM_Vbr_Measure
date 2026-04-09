@@ -36,13 +36,13 @@ def inst_off(ps, dmm):
 def filestruct_init(ps, dmm, test_type):
     # Gather date/time and open a text file
     config.time_stamp = strftime("%m%d%Y_hr%Hmin%M", localtime())
-    if test_type == 1:
+    if test_type == '1':
         if config.test_name == 0:
             config.pre_post = input("Select pre [1] or post [2] vibration test\n")
         config.test_name = "{0} Vibration Test {1}".format(config.pre_post,str(config.time_stamp))
-        config.board_ID = config.board_ID[config.test_ct]
-        config.SiPM_ID = config.SiPM_ID[config.test_ct]
-    elif test_type == 2:
+        config.board_ID = config.board_list[config.test_ct]
+        config.SiPM_ID = config.SiPM_ID_list[config.test_ct]
+    elif test_type == '2':
         #config.test_name = input("Enter test name (Pre Shake Test, Post Shake Test).")
         config.test_name = input("Enter the name for this test.\n")
         config.board_ID = input("Enter the board for this SiPM.\n")
@@ -91,7 +91,7 @@ def extractVbr(type, ps, dmm):
     print("{0}\n".format(config.data[0][1]))
     # Obtain setpoints from storage variable
     voltset = config.data[0][1]
-    avg_num = 5 if type == 'pre_data' else 50
+    avg_num = 5 if type == 'pre_data' else 10
 
     SCPI_word = ''
     voltage_temp = []
@@ -103,6 +103,8 @@ def extractVbr(type, ps, dmm):
 
     for i in range(len(voltset)):  # Outer loop walks through all voltage set points
         print("Beginning set point: {0} [V]...\n".format(voltset[i]))
+        if (voltset[i] > 50 and voltset[i] <56):
+            avg_num = 50
         currentArray = n.zeros(avg_num, dtype=n.float64)  # current array containing floats
         voltageArray = n.zeros(avg_num, dtype=n.float64)  # voltage array containing floats
         # Set voltage; loop for 3 channels of ps
@@ -120,7 +122,7 @@ def extractVbr(type, ps, dmm):
 
         equil_ct = 0
 
-        while abs(10000000000 * (temp_c_1 - temp_c_0)) > 1.5:
+        while abs(10000000000 * (temp_c_1 - temp_c_0)) > 2:
             equil_ct = equil_ct + 1
             temp_c_0 = float(dmm.query("READ?"))
             dmm.write("*WAI")
