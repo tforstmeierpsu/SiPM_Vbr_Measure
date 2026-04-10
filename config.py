@@ -12,6 +12,8 @@ test_ct = 0
 prot_res = 1000
 
 # Test information
+cont = 'Y'
+
 pre_post = time_stamp = test_name = board_ID = SiPM_ID = text_note = file_name = text_file = folder_path_text = Vbr_1 = Vbr_2 = Vbr_3 = Vbr_4 = Vbr_5 = None
 
 # DUT Information
@@ -19,3 +21,4 @@ pre_post = time_stamp = test_name = board_ID = SiPM_ID = text_note = file_name =
 
 board_list = ['TSM Shake 002','TSM Shake 002','TSM Shake 003','TSM Shake 003']
 SiPM_ID_list = ['87075','87076','87010','86984']
+wiring = ['Wiring information for first SiPM',"Wiring information for third SiPM","Wiring information for third SiPM","Wiring information for fourth SiPM"]

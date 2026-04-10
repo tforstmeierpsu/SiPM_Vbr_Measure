@@ -2,6 +2,9 @@ import numpy as n
 import time
 from time import gmtime, strftime, localtime, sleep
 from pathlib import Path
+
+import numpy as np
+
 import config
 import matplotlib.pyplot as plt
 import math
@@ -22,7 +25,7 @@ def inst_init(ps, dmm):
     dmm.write("CURR:DC:TERM 3")
     dmm.write("SENS:CURR:RANG 1e-6")
 
-def inst_off(ps, dmm):
+def test_off(ps, dmm):
     ps.write("*CLS")
     ps.write("VOLT 0,(@1,2,3)")
     ps.write("OUTP 0,(@1,2,3)")
@@ -33,24 +36,22 @@ def inst_off(ps, dmm):
     dmm.write("*RST")
     dmm.close()
 
+    config.text_file.close()
+
 def filestruct_init(ps, dmm, test_type):
     # Gather date/time and open a text file
     config.time_stamp = strftime("%m%d%Y_hr%Hmin%M", localtime())
     if test_type == '1':
         if config.test_name == 0:
-            config.pre_post = input("Select pre [1] or post [2] vibration test\n")
-        config.test_name = "{0} Vibration Test {1}".format(config.pre_post,str(config.time_stamp))
+            config.pre_post = input("Input name of test (Pre-vibration Test, Post-vibration Test...)\n")
+            config.test_name = "{0} {1}".format(config.pre_post,str(config.time_stamp))
         config.board_ID = config.board_list[config.test_ct]
         config.SiPM_ID = config.SiPM_ID_list[config.test_ct]
     elif test_type == '2':
-        #config.test_name = input("Enter test name (Pre Shake Test, Post Shake Test).")
         config.test_name = input("Enter the name for this test.\n")
-        config.board_ID = input("Enter the board for this SiPM.\n")
-        config.SiPM_ID = input("Enter the SiPM ID.\n")
-        #config.SiPM_ID = input("Enter the SiPM ID (002 TR: 87075, 002 TL: 87076, 003 BR: 87010, 003 BL: 86984).")
 
     # Make board folder if it does not exist already
-    config.folder_path_text = "SiPM Validation Data/{0}/{1}/{2}".format(str(config.test_name), str(config.SiPM_ID), str(config.time_stamp))
+    config.folder_path_text = "SiPM Validation Data/{0}".format(str(config.test_name))
     folder_path = Path(config.folder_path_text)
     try:
         folder_path.mkdir(parents=True, exist_ok=True)
@@ -58,39 +59,38 @@ def filestruct_init(ps, dmm, test_type):
         print(f"Error creating directory: {e}")
 
     # Create and open data storage file
-    config.file_name = "{0}_{1}_Data.txt".format(str(config.SiPM_ID), str(config.time_stamp))
+    config.file_name = "{0}_Data.txt".format(str(config.test_name))
     config.text_file = open("{0}/{1}".format(config.folder_path_text, config.file_name), 'a+')
 
     # Populate text file with header information
-    config.text_file.write("Description: This text document contains test information for TIGERISS SiPM validation.\n\n")
-    config.text_file.write("Date: {0}\n\nTest apparatus details:\n".format(config.time_stamp))
-    config.text_file.write("     Power supply: " + ps.query("*IDN?").rstrip('\n') + "+\n")
-    config.text_file.write("     Multimeter: " + dmm.query("*IDN?").rstrip('\n') + "+\n\n")
-    config.text_file.write("DUT Details:\n     Board: {0}\n     SiPM ID: {1}\n     Limit Resistor: {2}\n\n".format(config.board_ID, config.SiPM_ID, config.prot_res))
-    config.text_file.write("----------Test Begin----------\n\n")
+    print_write("Description: The following is test information for TIGERISS SiPM Vbr validation.\n\n")
+    print_write("Date: {0}\n\nTest apparatus details:\n".format(config.time_stamp))
+    print_write("     Power supply: " + ps.query("*IDN?").rstrip('\n') + "+\n")
+    print_write("     Multimeter: " + dmm.query("*IDN?").rstrip('\n') + "+\n\n")
 
-def volt_set(start,stop,step,Vbr_set):
+def volt_set(start,stop,step,Vbr_set,sm_step):
+
     coarse_volt = n.arange(start, stop, step, dtype=n.float64)
-    if Vbr_set == None:
-        print("\nBeginning coarse pass with following set-points:")
-        fine_volt = []
-    elif Vbr_set == 'Test_Fixture':
-        print("\nBeginning test fixture pass with following set-points:")
-        fine_volt = []
-    else:
-        print("\nBeginning fine pass around coarse Vbr with following set-points:")
-        #del config.data[0][1]
-        start = int((10 * Vbr_set) - 10)
-        stop = int((10 * Vbr_set) + 10)
-        fine_volt = n.arange(start, stop, 1, dtype=n.float64)
+    fine_volt = n.arange(Vbr_set-sm_step*4, Vbr_set+sm_step*5, sm_step, dtype=n.float64)
 
-    voltset_handle = ((n.sort(n.append(coarse_volt, fine_volt))) / 10).tolist()
-    config.data[0].append(voltset_handle)
+    print("Coarse volt: {0}".format(coarse_volt))
+    print("Fine volt: {0}".format(fine_volt))
+
+    try:
+        print(str(config.data[0][1]))
+        volt_handle = config.data[0][1]*10
+        config.data[0][1] = n.unique(n.sort(n.append(volt_handle, fine_volt)/10))
+    except IndexError:
+        config.data[0].append(n.sort(n.append(coarse_volt, fine_volt)/10))
+
 
 def extractVbr(type, ps, dmm):
+    print_write("DUT Details:\n     Board: {0}\n     SiPM ID: {1}\n     Limit Resistor: {2}\n\n".format(config.board_ID, config.SiPM_ID, config.prot_res))
+    print_write("----------Test Begin----------\n\n")
+
     print("{0}\n".format(config.data[0][1]))
     # Obtain setpoints from storage variable
-    voltset = config.data[0][1]
+    voltset = config.data[0][1].tolist()
     avg_num = 5 if type == 'pre_data' else 10
 
     SCPI_word = ''
@@ -104,7 +104,7 @@ def extractVbr(type, ps, dmm):
     for i in range(len(voltset)):  # Outer loop walks through all voltage set points
         print("Beginning set point: {0} [V]...\n".format(voltset[i]))
         if (voltset[i] > 50 and voltset[i] <56):
-            avg_num = 50
+            avg_num = 20
         currentArray = n.zeros(avg_num, dtype=n.float64)  # current array containing floats
         voltageArray = n.zeros(avg_num, dtype=n.float64)  # voltage array containing floats
         # Set voltage; loop for 3 channels of ps
@@ -177,7 +177,7 @@ def extractVbr(type, ps, dmm):
 
     return Vbr_temp
 
-def save_data():
+def save_data(pass_info):
     config.text_note = input("Enter any notes for this test.\n")
     temp_numpy_array = n.array(config.data[2][1])
     valid_mask = temp_numpy_array > 0
@@ -198,7 +198,7 @@ def save_data():
     config.text_file.write("Current Array [A]:\n{0}\n\n\n".format(config.data[2][1]))
     config.text_file.write("Notes: {0}\n\n\n".format(config.text_note))
     config.text_file.write("----------Test completed----------\n")
-    config.text_file.close()
+
 
     # Plot the data:
     plt.figure(1)
@@ -208,15 +208,15 @@ def save_data():
     plt.scatter(Vbr, log_i_br, color='red')
     label = str(Vbr) + ',' + str(log_i_br)
     plt.annotate(label, (Vbr, log_i_br), textcoords="offset points", xytext=(0, 10), ha='center')
-    plt.title("{0} {1} VoltVSCurr".format(config.SiPM_ID,config.test_name))
-    plt.savefig("{0}/{1}_{2}_VoltVSCurr.png".format(config.folder_path_text, config.SiPM_ID,config.test_name))
+    plt.title("{0} {1} VoltVSCurr".format(config.test_name,config.SiPM_ID))
+    plt.savefig("{0}/{1}_{2}_{3}_VoltVSCurr.png".format(config.folder_path_text, config.test_name, config.SiPM_ID,pass_info))
 
     plt.figure(2)
     plt.plot(XPRIME, YPRIME)
     plt.xlabel('Reverse Voltage [V]')
     plt.ylabel('SiPM d(log(I))/d(V)')
     plt.title("{0} {1} Vbr".format(config.SiPM_ID, config.test_name))
-    plt.savefig("{0}/{1}_{2}_Vbr.png".format(config.folder_path_text, config.SiPM_ID,config.test_name))
+    plt.savefig("{0}/{1}_{2}_{3}_Vbr.png".format(config.folder_path_text, config.SiPM_ID,config.test_name,pass_info))
 
 # Safely extracts Vbr with numpy log
 def Vbr_from_data(current_list, voltage_list):
@@ -246,3 +246,7 @@ def find_vbr_y_value(log_curr, volt, vbr):
             break
     log_i = (log_curr[index1]+log_curr[index2])/2
     return log_i
+
+def print_write(test_info):
+    print(test_info)
+    config.text_file.write(test_info)
